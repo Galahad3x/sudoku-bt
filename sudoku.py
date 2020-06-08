@@ -136,7 +136,7 @@ def read_file(filename):
 
 def prettify(sudoku):
 	prettified = ""
-	line_break = "|" + "|".join(["-------"]*3) + "|\n"
+	line_break = "|" + "|".join(["-------"]*(SUDOKU_WIDTH//REGION_WIDTH)) + "|\n"
 	for i, row in enumerate(sudoku):
 		if i % REGION_HEIGHT == 0:
 			prettified += line_break
