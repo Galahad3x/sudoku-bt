@@ -2,8 +2,10 @@
 Sudoku solved in Backtracking
 
 ## Input:
-Fixd numbers are said number, empty squares are 0
+First line: region_width region_height
+Fixed numbers are said number, empty squares are 0
 ```
+3 3
 5 3 0 0 7 0 0 0 0
 6 0 0 1 9 5 0 0 0
 0 9 8 0 0 0 0 6 0
