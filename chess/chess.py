@@ -139,48 +139,113 @@ class Board:
 	def is_valid_move(self,from_coords,to_coords):
 		piece_from = self.board_array[from_coords[0]][from_coords[1]]
 		piece_to = self.board_array[to_coords[0]][to_coords[1]]
+		print("Attempting to move " + str(from_coords) + " to " + str(to_coords))
 		if piece_from == None:
 			return False
-		if piece_to == None:
-			if piece_from.pClass == "pawn":
-				if not piece_from.hasMoved:
-					for y, letter in enumerate("ABCDEFGH"):
-						if self.player_side == piece_to.color and piece_from.up == letter and to_coords[1] == "ABCDEFGH"[y-2] and self.board_array["ABCDEFGH"[y-1]][to_coords[1]] == None:
-							return True
-						elif self.player_side != piece_to.color and piece_from.up == letter and to_coords[1] == "ABCDEFGH"[y+2] and self.board_array["ABCDEFGH"[y+1]][to_coords[1]] == None:
-							return True
-						return False
-				else:
-					for y, letter in enumerate("ABCDEFGH"):
-						if self.player_side == piece_to.color and piece_from.up == letter and to_coords[1] == "ABCDEFGH"[y-1]:
-							return True
-						elif self.player_side != piece_to.color and piece_from.up == letter and to_coords[1] == "ABCDEFGH"[y+1]:
-							return True
-						return False
-			elif piece_from.pClass == "tower":
-				if to_coords[0] == from_coords[0]:
-					for elem in range(min(from_coords[1],to_coords[1])+1,max(from_coords[1],to_coords[1])): 
-						if self.board_array[to_coords[0]][elem] != None:
-							return False
-					return True
-				elif to_coords[1] == from_coords[1]:
-					for elem in "ABCDEFGH"["ABCDEFGH".find(min(from_coords[0],to_coords[0]))+1:"ABCDEFGH".find(max(from_coords[0],to_coords[0]))]:
-						if self.board_array[elem][to_coords[1]] != None:
-							return False
-					return True
-				else:
-					return False
-			elif piece_from.pClass == "knight":
-				for y, letter in "ABCDEFGH":
-					if piece_from.up == letter:
-						if to_coords[0] == #CONTINUAR AQUI
-		else:
+		if piece_to != None:
 			if piece_to.color == piece_from.color:
 				return False
+			elif piece_to.pClass == "king":
+				return False
+		if piece_from.pClass == "pawn":
+			if not piece_from.hasMoved:
+				for y, letter in enumerate("ABCDEFGH"):
+					if self.player_side == piece_from.color and piece_from.up == letter:
+						if y >= 2 and to_coords[0] == "ABCDEFGH"[y-2] and self.board_array["ABCDEFGH"[y-1]][to_coords[1]] == None:
+							return True
+					elif self.player_side != piece_from.color and piece_from.up == letter and to_coords[0] == "ABCDEFGH__"[y+2] and self.board_array["ABCDEFGH_"[y+1]][to_coords[1]] == None:
+						return True
+					if y >= 1 and self.player_side == piece_from.color and piece_from.up == letter and to_coords[0] == "ABCDEFGH"[y-1]:
+						return True
+					elif self.player_side != piece_from.color and piece_from.up == letter and to_coords[0] == "ABCDEFGH_"[y+1]:
+						return True
+				return False
 			else:
-				if piece_to.pClass = "pawn":
-							
-				
+				print("Has moved")
+				for y, letter in enumerate("ABCDEFGH"):
+					if y >= 1 and self.player_side == piece_from.color and piece_from.up == letter and to_coords[0] == "ABCDEFGH"[y-1]:
+						return True
+					elif self.player_side != piece_from.color and piece_from.up == letter and to_coords[0] == "ABCDEFGH_"[y+1]:
+						return True
+				return False
+		elif piece_from.pClass == "tower":
+			if to_coords[0] == from_coords[0]:
+				for elem in range(min(from_coords[1],to_coords[1])+1,max(from_coords[1],to_coords[1])): 
+					if self.board_array[to_coords[0]][elem] != None:
+						return False
+				return True
+			elif to_coords[1] == from_coords[1]:
+				for elem in "ABCDEFGH"["ABCDEFGH".find(min(from_coords[0],to_coords[0]))+1:"ABCDEFGH".find(max(from_coords[0],to_coords[0]))]:
+					if self.board_array[elem][to_coords[1]] != None:
+						return False
+				return True
+			else:
+				return False
+		elif piece_from.pClass == "knight":
+			for y, letter in enumerate("ABCDEFGH"):
+				if piece_from.up == letter:
+					if to_coords[0] == "ABCDEFGH__"[y + 2] or (y >= 2 and to_coords[0] == "ABCDEFGH"[y - 2]):
+						if to_coords[1] == from_coords[1]+1 or to_coords[1] == from_coords[1]-1:
+							return True
+					elif to_coords[0] == "ABCDEFGH_"[y + 1] or (y >= 1 and to_coords[0] == "ABCDEFGH"[y - 1]):
+						if to_coords[1] == from_coords[1]+2 or to_coords[1] == from_coords[1]-2:
+							return True
+					return False
+		elif piece_from.pClass == "bishop":
+			left = piece_from.right
+			lett_ind = 0
+			to_ind = 0
+			for y, letter in enumerate("ABCDEFGH"):
+				if piece_from.up == letter:
+					lett_ind = y
+				if letter == to_coords[0]:
+					to_ind = y
+			if lett_ind == to_ind or from_coords[1] == to_coords[1]:
+				return False
+			for i in range(1,8):
+				if (lett_ind-i) >= 0 and (left-i) >= 0 and "ABCDEFGH"[lett_ind-i] == to_coords[0] and (left-i) == to_coords[1]:
+					return True
+				if (lett_ind+i) < 8 and (left+i) < 8 and "ABCDEFGH"[lett_ind+i] == to_coords[0] and (left+i) == to_coords[1]:
+					return True
+				if (lett_ind-i) >= 0 and (left+i) < 8 and "ABCDEFGH"[lett_ind-i] == to_coords[0] and (left+i) == to_coords[1]:
+					return True
+				if (lett_ind+i) < 8 and (left-i) >= 0 and "ABCDEFGH"[lett_ind+i] == to_coords[0] and (left-i) == to_coords[1]:
+					return True
+			return False
+		elif piece_from.pClass == "queen":
+			if to_coords[0] == from_coords[0]:
+				for elem in range(min(from_coords[1],to_coords[1])+1,max(from_coords[1],to_coords[1])): 
+					if self.board_array[to_coords[0]][elem] != None:
+						return False
+				return True
+			elif to_coords[1] == from_coords[1]:
+				for elem in "ABCDEFGH"["ABCDEFGH".find(min(from_coords[0],to_coords[0]))+1:"ABCDEFGH".find(max(from_coords[0],to_coords[0]))]:
+					if self.board_array[elem][to_coords[1]] != None:
+						return False
+				return True
+			left = piece_from.right
+			lett_ind = 0
+			to_ind = 0
+			for y, letter in enumerate("ABCDEFGH"):
+				if piece_from.up == letter:
+					lett_ind = y
+				if letter == to_coords[0]:
+					to_ind = y
+			for i in range(1,8):
+				if (lett_ind-i) >= 0 and (left-i) >= 0 and "ABCDEFGH"[lett_ind-i] == to_coords[0] and (left-i) == to_coords[1]:
+					return True
+				if (lett_ind+i) < 8 and (left+i) < 8 and "ABCDEFGH"[lett_ind+i] == to_coords[0] and (left+i) == to_coords[1]:
+					return True
+				if (lett_ind-i) >= 0 and (left+i) < 8 and "ABCDEFGH"[lett_ind-i] == to_coords[0] and (left+i) == to_coords[1]:
+					return True
+				if (lett_ind+i) < 8 and (left-i) >= 0 and "ABCDEFGH"[lett_ind+i] == to_coords[0] and (left-i) == to_coords[1]:
+					return True
+			return False
+		elif piece_from.pClass == "king":
+			return (abs(ord(from_coords[0]) - ord(to_coords[0])) + abs(from_coords[1] - to_coords[1])) == 1
+		else:
+			return False
+			
 	
 	def print_state(self):	
 		for letter in "ABCDEFGH":
@@ -240,6 +305,7 @@ def game_loop():
 								#moure peça
 							else:
 								print("Invalid move")
+								selected_piece = None
 								
 
 		setup_board()
