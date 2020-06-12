@@ -177,9 +177,8 @@ class Board:
                         self.board_array[to_coords[0]][to_coords[1]] is not None and \
                         abs(to_coords[1] - from_coords[1]) == 1:
                     return True
-                elif self.player_side != piece_from.color and \
-                        piece_from.up == letter and \
-                        to_coords[0] == "ABCDEFGH_"[y + 1] and to_coords[1] == from_coords[1] and \
+                elif y < 7 and self.player_side != piece_from.color and \
+                        piece_from.up == letter and to_coords[0] == "ABCDEFGH_"[y + 1] and \
                         self.board_array[to_coords[0]][to_coords[1]] is not None and \
                         abs(to_coords[1] - from_coords[1]) == 1:
                     return True
@@ -389,5 +388,5 @@ def game_loop():
 
 
 if __name__ in "__main__":
-    BOARD = Board("w")
+    BOARD = Board("b")
     game_loop()
