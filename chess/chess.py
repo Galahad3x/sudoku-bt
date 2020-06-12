@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
-import sys, pygame
+import pygame
+import sys
 from time import sleep
 
 pygame.init()
@@ -48,13 +49,14 @@ class Piece:
                 break
 
     def copy(self):
-        return Piece(self.color, self.pClass, self.coords)
+        return Piece(self.color, self.pClass, (self.up, self.right))
 
 
 class Board:
-    def generate_board_array(self, player_side):
+    @staticmethod
+    def generate_board_array(player_side):
+        b_array = {}
         if player_side.startswith("w"):
-            b_array = {}
             for letter in "ABCDEFGH":
                 b_array[letter] = []
                 if letter == "A":
@@ -85,7 +87,6 @@ class Board:
                     for ind in range(8):
                         b_array[letter].append(None)
         elif player_side.startswith("b"):
-            b_array = {}
             for letter in "ABCDEFGH":
                 b_array[letter] = []
                 if letter == "A":
@@ -119,7 +120,7 @@ class Board:
 
     def __init__(self, player_side):
         self.player_side = player_side
-        self.board_array = self.generate_board_array(player_side)
+        self.board_array = Board.generate_board_array(player_side)
 
     def copy(self):
         new_barray = {}
@@ -131,7 +132,7 @@ class Board:
 
     def move_piece(self, piece_coords, new_coords):
         print("Moved piece " + str(piece_coords) + " to " + str(new_coords))
-        if self.board_array[piece_coords[0]][piece_coords[1]] != None:
+        if self.board_array[piece_coords[0]][piece_coords[1]] is not None:
             self.board_array[piece_coords[0]][piece_coords[1]].update((new_coords[0], new_coords[1]))
             self.board_array[new_coords[0]][new_coords[1]] = self.board_array[piece_coords[0]][piece_coords[1]]
             self.board_array[piece_coords[0]][piece_coords[1]] = None
@@ -141,9 +142,9 @@ class Board:
         piece_from = self.board_array[from_coords[0]][from_coords[1]]
         piece_to = self.board_array[to_coords[0]][to_coords[1]]
         print("Attempting to move " + str(from_coords) + " to " + str(to_coords))
-        if piece_from == None:
+        if piece_from is None:
             return False
-        if piece_to != None:
+        if piece_to is not None:
             if piece_to.color == piece_from.color:
                 return False
             elif piece_to.pClass == "king":
@@ -153,46 +154,46 @@ class Board:
                 if not piece_from.hasMoved:
                     if self.player_side == piece_from.color and piece_from.up == letter:
                         if y >= 2 and to_coords[0] == "ABCDEFGH"[y - 2] and \
-                                self.board_array["ABCDEFGH"[y - 1]][to_coords[1]] == None and \
-                                self.board_array["ABCDEFGH"[y - 2]][to_coords[1]] == None:
+                                self.board_array["ABCDEFGH"[y - 1]][to_coords[1]] is None and \
+                                self.board_array["ABCDEFGH"[y - 2]][to_coords[1]] is None:
                             return True
                     elif self.player_side != piece_from.color and \
                             piece_from.up == letter and to_coords[0] == "ABCDEFGH__"[y + 2] and \
-                            self.board_array["ABCDEFGH_"[y + 1]][to_coords[1]] == None and \
-                            self.board_array["ABCDEFGH"[y + 2]][to_coords[1]] == None:
+                            self.board_array["ABCDEFGH_"[y + 1]][to_coords[1]] is None and \
+                            self.board_array["ABCDEFGH"[y + 2]][to_coords[1]] is None:
                         return True
                 if y >= 1 and self.player_side == piece_from.color and \
                         piece_from.up == letter and to_coords[0] == "ABCDEFGH"[y - 1] and \
                         to_coords[1] == from_coords[1] and \
-                        self.board_array[to_coords[0]][to_coords[1]] == None:
+                        self.board_array[to_coords[0]][to_coords[1]] is None:
                     return True
                 elif self.player_side != piece_from.color and \
                         piece_from.up == letter and to_coords[0] == "ABCDEFGH_"[y + 1] and \
                         to_coords[1] == from_coords[1] and \
-                        self.board_array[to_coords[0]][to_coords[1]] == None:
+                        self.board_array[to_coords[0]][to_coords[1]] is None:
                     return True
                 if y >= 1 and self.player_side == piece_from.color and \
                         piece_from.up == letter and to_coords[0] == "ABCDEFGH"[y - 1] and \
-                        self.board_array[to_coords[0]][to_coords[1]] != None and \
+                        self.board_array[to_coords[0]][to_coords[1]] is not None and \
                         abs(to_coords[1] - from_coords[1]) == 1:
                     return True
                 elif self.player_side != piece_from.color and \
                         piece_from.up == letter and \
                         to_coords[0] == "ABCDEFGH_"[y + 1] and to_coords[1] == from_coords[1] and \
-                        self.board_array[to_coords[0]][to_coords[1]] != None and \
+                        self.board_array[to_coords[0]][to_coords[1]] is not None and \
                         abs(to_coords[1] - from_coords[1]) == 1:
                     return True
             return False
         elif piece_from.pClass == "tower":
             if to_coords[0] == from_coords[0]:
                 for elem in range(min(from_coords[1], to_coords[1]) + 1, max(from_coords[1], to_coords[1])):
-                    if self.board_array[to_coords[0]][elem] != None:
+                    if self.board_array[to_coords[0]][elem] is not None:
                         return False
                 return True
             elif to_coords[1] == from_coords[1]:
                 for elem in "ABCDEFGH"["ABCDEFGH".find(min(from_coords[0], to_coords[0])) + 1:"ABCDEFGH".find(
                         max(from_coords[0], to_coords[0]))]:
-                    if self.board_array[elem][to_coords[1]] != None:
+                    if self.board_array[elem][to_coords[1]] is not None:
                         return False
                 return True
             else:
@@ -236,39 +237,37 @@ class Board:
                     if (lett_ind + i) < 8 and (left - i) >= 0 and \
                             "ABCDEFGH"[lett_ind + i] == to_coords[0] and (left - i) == to_coords[1]:
                         return True
-                if (lett_ind - i) >= 0 and (left - i) >= 0 and self.board_array["ABCDEFGH"[lett_ind - i]][
-                    left - i] != None:
+                if (lett_ind - i) >= 0 and (left - i) >= 0 and \
+                        self.board_array["ABCDEFGH"[lett_ind - i]][left - i] is not None:
                     top_left = False
-                if (lett_ind - i) >= 0 and (left + i) < 8 and self.board_array["ABCDEFGH"[lett_ind - i]][
-                    left + i] != None:
+                if (lett_ind - i) >= 0 and (left + i) < 8 and \
+                        self.board_array["ABCDEFGH"[lett_ind - i]][left + i] is not None:
                     top_right = False
-                if (lett_ind + i) < 8 and (left - i) >= 0 and self.board_array["ABCDEFGH"[lett_ind + i]][
-                    left - i] != None:
+                if (lett_ind + i) < 8 and (left - i) >= 0 and \
+                        self.board_array["ABCDEFGH"[lett_ind + i]][left - i] is not None:
                     bot_left = False
-                if (lett_ind + i) < 8 and (left + i) < 8 and self.board_array["ABCDEFGH"[lett_ind + i]][
-                    left + i] != None:
+                if (lett_ind + i) < 8 and (left + i) < 8 and \
+                        self.board_array["ABCDEFGH"[lett_ind + i]][left + i] is not None:
                     bot_right = False
             return False
         elif piece_from.pClass == "queen":
             if to_coords[0] == from_coords[0]:
                 for elem in range(min(from_coords[1], to_coords[1]) + 1, max(from_coords[1], to_coords[1])):
-                    if self.board_array[to_coords[0]][elem] != None:
+                    if self.board_array[to_coords[0]][elem] is not None:
                         return False
                 return True
             elif to_coords[1] == from_coords[1]:
                 for elem in "ABCDEFGH"["ABCDEFGH".find(min(from_coords[0], to_coords[0])) + 1:"ABCDEFGH".find(
                         max(from_coords[0], to_coords[0]))]:
-                    if self.board_array[elem][to_coords[1]] != None:
+                    if self.board_array[elem][to_coords[1]] is not None:
                         return False
                 return True
             left = piece_from.right
             lett_ind = 0
-            to_ind = 0
+            top_left = top_right = bot_left = bot_right = True
             for y, letter in enumerate("ABCDEFGH"):
                 if piece_from.up == letter:
                     lett_ind = y
-                if letter == to_coords[0]:
-                    to_ind = y
             for i in range(1, 8):
                 if top_left:
                     if (lett_ind - i) >= 0 and (left - i) >= 0 and \
@@ -286,17 +285,17 @@ class Board:
                     if (lett_ind + i) < 8 and (left - i) >= 0 and \
                             "ABCDEFGH"[lett_ind + i] == to_coords[0] and (left - i) == to_coords[1]:
                         return True
-                if (lett_ind - i) >= 0 and (left - i) >= 0 and self.board_array["ABCDEFGH"[lett_ind - i]][
-                    left - i] != None:
+                if (lett_ind - i) >= 0 and (left - i) >= 0 and \
+                        self.board_array["ABCDEFGH"[lett_ind - i]][left - i] is not None:
                     top_left = False
-                if (lett_ind - i) >= 0 and (left + i) < 8 and self.board_array["ABCDEFGH"[lett_ind - i]][
-                    left + i] != None:
+                if (lett_ind - i) >= 0 and (left + i) < 8 and \
+                        self.board_array["ABCDEFGH"[lett_ind - i]][left + i] is not None:
                     top_right = False
-                if (lett_ind + i) < 8 and (left - i) >= 0 and self.board_array["ABCDEFGH"[lett_ind + i]][
-                    left - i] != None:
+                if (lett_ind + i) < 8 and (left - i) >= 0 and \
+                        self.board_array["ABCDEFGH"[lett_ind + i]][left - i] is not None:
                     bot_left = False
-                if (lett_ind + i) < 8 and (left + i) < 8 and self.board_array["ABCDEFGH"[lett_ind + i]][
-                    left + i] != None:
+                if (lett_ind + i) < 8 and (left + i) < 8 and \
+                        self.board_array["ABCDEFGH"[lett_ind + i]][left + i] is not None:
                     bot_right = False
             return False
         elif piece_from.pClass == "king":
@@ -311,7 +310,7 @@ class Board:
         for letter in "ABCDEFGH":
             print(letter, end=": ")
             for piece in self.board_array[letter]:
-                if piece != None:
+                if piece is not None:
                     print(piece.color, piece.pClass, "\t", piece.right, end=" ")
                 else:
                     print("None", end=" ")
@@ -331,7 +330,7 @@ def setup_tiles():
 def place_pieces():
     for ind, letter in enumerate("ABCDEFGH"):
         for piece in BOARD.board_array[letter]:
-            if piece != None:
+            if piece is not None:
                 piece.draw()
     pygame.display.flip()
 
@@ -344,7 +343,9 @@ def setup_board():
 
 def game_loop():
     selected_piece = None
+    side = True  # True -> White, False -> Black
 
+    print("White pieces' turn")
     while True:
         sleep(0.1)
         for event in pygame.event.get():
@@ -355,13 +356,30 @@ def game_loop():
 
                 for y, letter in enumerate("ABCDEFGH"):
                     if pos[1] // 84 == y:
-                        if selected_piece == None:
-                            selected_piece = (letter, pos[0] // 84)
-                            print("Selected piece: " + letter + " " + str(pos[0] // 84))
+                        if selected_piece is None:
+                            if side:
+                                if BOARD.board_array[letter][pos[0] // 84] is not None and \
+                                        BOARD.board_array[letter][pos[0] // 84].color == "w":
+                                    selected_piece = (letter, pos[0] // 84)
+                                    print("Selected piece: " + letter + " " + str(pos[0] // 84))
+                                else:
+                                    print("Not a valid piece")
+                            else:
+                                if BOARD.board_array[letter][pos[0] // 84] is not None and \
+                                        BOARD.board_array[letter][pos[0] // 84].color == "b":
+                                    selected_piece = (letter, pos[0] // 84)
+                                    print("Selected piece: " + letter + " " + str(pos[0] // 84))
+                                else:
+                                    print("Not a valid piece")
                         else:
                             if BOARD.is_valid_move(selected_piece, (letter, pos[0] // 84)):
                                 BOARD.move_piece(selected_piece, (letter, pos[0] // 84))
                                 selected_piece = None
+                                side = not side
+                                if side:
+                                    print("White pieces' turn")
+                                else:
+                                    print("Black pieces' turn")
                             # moure peça
                             else:
                                 print("Invalid move")
