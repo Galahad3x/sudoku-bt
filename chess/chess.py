@@ -12,6 +12,7 @@ WHITE = [255, 255, 255]
 RED = [255, 0, 0]
 
 SCREEN = pygame.display.set_mode(SIZE)
+pygame.display.set_caption('Chess')
 
 
 # ball = pygame.image.load("Images/basket.png")
@@ -121,33 +122,94 @@ class Board:
     def __init__(self, player_side):
         self.player_side = player_side
         self.board_array = Board.generate_board_array(player_side)
+        self.check = {'b': False, 'w': False}
+
+    def new_board(self, player_side, board_array, check):
+        self.player_side = player_side
+        self.board_array = board_array
+        self.check = check
 
     def copy(self):
         new_barray = {}
         for letter in "ABCDEFGH":
             new_barray[letter] = []
             for piece in self.board_array[letter]:
-                new_barray[letter].append(piece.copy())
-        return new_barray
+                if piece is not None:
+                    new_barray[letter].append(piece.copy())
+                else:
+                    new_barray[letter].append(None)
+        new_board = Board("w")
+        new_board.new_board(self.player_side, new_barray, self.check)
+        return new_board
 
     def move_piece(self, piece_coords, new_coords):
-        print("Moved piece " + str(piece_coords) + " to " + str(new_coords))
         if self.board_array[piece_coords[0]][piece_coords[1]] is not None:
             self.board_array[piece_coords[0]][piece_coords[1]].update((new_coords[0], new_coords[1]))
             self.board_array[new_coords[0]][new_coords[1]] = self.board_array[piece_coords[0]][piece_coords[1]]
             self.board_array[piece_coords[0]][piece_coords[1]] = None
+            print("Moved piece " + str(piece_coords) + " to " + str(new_coords))
+            king_x = king_y = None
+            for y in self.board_array.keys():
+                for x, piece in enumerate(self.board_array[y]):
+                    if piece is not None and piece.color == self.board_array[new_coords[0]][new_coords[1]].color \
+                            and piece.pClass == "king":
+                        king_x, king_y = x, y
+            self.check['b'] = self.check['w'] = False
+            for y in self.board_array.keys():
+                for x, piece in enumerate(self.board_array[y]):
+                    if piece is not None \
+                            and piece.pClass == "king" \
+                            and piece.color != self.board_array[new_coords[0]][new_coords[1]].color:
+                        if self.is_valid_move(new_coords, (y, x)):
+                            if self.board_array[new_coords[0]][new_coords[1]].color == "w":
+                                self.check['b'] = True
+                                print("Black in check")
+                            elif self.board_array[new_coords[0]][new_coords[1]].color == "b":
+                                self.check['w'] = True
+                                print("White in check")
+                    if piece is not None \
+                            and piece.color != self.board_array[new_coords[0]][new_coords[1]].color \
+                            and self.is_valid_move((y, x), (king_y, king_x)):
+                        if piece.color == "b":
+                            self.check['w'] = True
+                            print("White in check")
+                        else:
+                            self.check['b'] = True
+                            print("Black in check")
+                    elif piece is not None:
+                        if piece.color == "b":
+                            self.check['w'] = False or self.check['w']
+                        else:
+                            self.check['b'] = False or self.check['b']
         place_pieces()
 
     def is_valid_move(self, from_coords, to_coords):
         piece_from = self.board_array[from_coords[0]][from_coords[1]]
         piece_to = self.board_array[to_coords[0]][to_coords[1]]
-        print("Attempting to move " + str(from_coords) + " to " + str(to_coords))
+        # print("Attempting to move " + str(from_coords) + " to " + str(to_coords))
         if piece_from is None:
             return False
         if piece_to is not None:
             if piece_to.color == piece_from.color:
                 return False
-            elif piece_to.pClass == "king":
+        if self.is_valid_move_2(from_coords, to_coords):
+            current_color = piece_from.color
+            new_board = self.copy()
+            new_board.move_piece(from_coords, to_coords)
+            if new_board.check[current_color]:
+                return False
+            else:
+                return True
+        return False
+
+    def is_valid_move_2(self, from_coords, to_coords):
+        piece_from = self.board_array[from_coords[0]][from_coords[1]]
+        piece_to = self.board_array[to_coords[0]][to_coords[1]]
+        # print("Attempting to move " + str(from_coords) + " to " + str(to_coords))
+        if piece_from is None:
+            return False
+        if piece_to is not None:
+            if piece_to.color == piece_from.color:
                 return False
         if piece_from.pClass == "pawn":
             for y, letter in enumerate("ABCDEFGH"):
@@ -301,7 +363,8 @@ class Board:
             if to_coords[0] == from_coords[0] or to_coords[1] == from_coords[1]:
                 return (abs(ord(from_coords[0]) - ord(to_coords[0])) + abs(from_coords[1] - to_coords[1])) == 1
             else:
-                return (abs(ord(from_coords[0]) - ord(to_coords[0]))) == 1 and (abs(from_coords[1] - to_coords[1])) == 1
+                return (abs(ord(from_coords[0]) - ord(to_coords[0]))) == 1 and (
+                    abs(from_coords[1] - to_coords[1])) == 1
         else:
             return False
 
@@ -388,5 +451,5 @@ def game_loop():
 
 
 if __name__ in "__main__":
-    BOARD = Board("b")
+    BOARD = Board("w")
     game_loop()
