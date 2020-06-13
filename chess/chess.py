@@ -147,7 +147,7 @@ class Board:
             self.board_array[piece_coords[0]][piece_coords[1]].update((new_coords[0], new_coords[1]))
             self.board_array[new_coords[0]][new_coords[1]] = self.board_array[piece_coords[0]][piece_coords[1]]
             self.board_array[piece_coords[0]][piece_coords[1]] = None
-            print("Moved piece " + str(piece_coords) + " to " + str(new_coords))
+            # print("Moved piece " + str(piece_coords) + " to " + str(new_coords))
             king_x = king_y = None
             for y in self.board_array.keys():
                 for x, piece in enumerate(self.board_array[y]):
@@ -163,24 +163,24 @@ class Board:
                         if self.is_valid_move(new_coords, (y, x)):
                             if self.board_array[new_coords[0]][new_coords[1]].color == "w":
                                 self.check['b'] = True
-                                print("Black in check")
                             elif self.board_array[new_coords[0]][new_coords[1]].color == "b":
                                 self.check['w'] = True
-                                print("White in check")
                     if piece is not None \
                             and piece.color != self.board_array[new_coords[0]][new_coords[1]].color \
                             and self.is_valid_move((y, x), (king_y, king_x)):
                         if piece.color == "b":
                             self.check['w'] = True
-                            print("White in check")
                         else:
                             self.check['b'] = True
-                            print("Black in check")
                     elif piece is not None:
                         if piece.color == "b":
                             self.check['w'] = False or self.check['w']
                         else:
                             self.check['b'] = False or self.check['b']
+        if self.check['w']:
+            print("White in check")
+        if self.check['b']:
+            print("Black in check")
         place_pieces()
 
     def is_valid_move(self, from_coords, to_coords):
@@ -378,6 +378,17 @@ class Board:
                     print("None", end=" ")
             print()
 
+    def possible_moves(self, side):
+        moves = []
+        for y in self.board_array.keys():
+            for x, piece in enumerate(self.board_array[y]):
+                if piece is not None and piece.color == side:
+                    for yy in self.board_array.keys():
+                        for xx, piece2 in enumerate(self.board_array[y]):
+                            if self.is_valid_move((y, x), (yy, xx)):
+                                moves.append(((y, x), (yy, xx)))
+        return moves
+
 
 def setup_tiles():
     # print("Setting up tiles")
@@ -420,19 +431,32 @@ def game_loop():
                     if pos[1] // 84 == y:
                         if selected_piece is None:
                             if side:
-                                if BOARD.board_array[letter][pos[0] // 84] is not None and \
-                                        BOARD.board_array[letter][pos[0] // 84].color == "w":
-                                    selected_piece = (letter, pos[0] // 84)
-                                    print("Selected piece: " + letter + " " + str(pos[0] // 84))
+                                if len(BOARD.possible_moves("w")) > 0:
+                                    if BOARD.board_array[letter][pos[0] // 84] is not None and \
+                                            BOARD.board_array[letter][pos[0] // 84].color == "w":
+                                        selected_piece = (letter, pos[0] // 84)
+                                        print("Selected piece: " + letter + " " + str(pos[0] // 84))
+                                    else:
+                                        print("Not a valid piece")
                                 else:
-                                    print("Not a valid piece")
+                                    if BOARD.check["w"]:
+                                        print("End of the game: BLACK wins!")
+                                    else:
+                                        print("End of the game: Stalemate")
                             else:
-                                if BOARD.board_array[letter][pos[0] // 84] is not None and \
-                                        BOARD.board_array[letter][pos[0] // 84].color == "b":
-                                    selected_piece = (letter, pos[0] // 84)
-                                    print("Selected piece: " + letter + " " + str(pos[0] // 84))
+                                if len(BOARD.possible_moves("b")) > 0:
+                                    if BOARD.board_array[letter][pos[0] // 84] is not None and \
+                                            BOARD.board_array[letter][pos[0] // 84].color == "b":
+                                        selected_piece = (letter, pos[0] // 84)
+                                        print("Selected piece: " + letter + " " + str(pos[0] // 84))
+                                    else:
+                                        print("Not a valid piece")
                                 else:
-                                    print("Not a valid piece")
+                                    if BOARD.check["b"]:
+                                        print("End of the game: WHITE wins!")
+                                    else:
+                                        print("End of the game: Stalemate")
+
                         else:
                             if BOARD.is_valid_move(selected_piece, (letter, pos[0] // 84)):
                                 BOARD.move_piece(selected_piece, (letter, pos[0] // 84))
