@@ -2,7 +2,7 @@
 
 import pygame
 import sys
-from time import sleep
+from tqdm import tqdm
 
 pygame.init()
 
@@ -204,6 +204,8 @@ class Board:
             place_pieces()
 
     def is_valid_move(self, from_coords, to_coords):
+        if to_coords[0] is None or from_coords[0] is None or to_coords[1] is None or from_coords[1] is None:
+            return False
         piece_from = self.board_array[from_coords[0]][from_coords[1]]
         piece_to = self.board_array[to_coords[0]][to_coords[1]]
         # print("Attempting to move " + str(from_coords) + " to " + str(to_coords))
@@ -231,14 +233,16 @@ class Board:
                     if self.player_side == piece_from.color and piece_from.up == letter:
                         if y >= 2 and to_coords[0] == "ABCDEFGH"[y - 2] and \
                                 self.board_array["ABCDEFGH"[y - 1]][to_coords[1]] is None and \
-                                self.board_array["ABCDEFGH"[y - 2]][to_coords[1]] is None:
+                                self.board_array["ABCDEFGH"[y - 2]][to_coords[1]] is None and \
+                                to_coords[1] == from_coords[1]:
                             return True
                     elif self.player_side != piece_from.color and \
                             piece_from.up == letter and to_coords[0] == "ABCDEFGH__"[y + 2] and \
                             self.board_array["ABCDEFGH_"[y + 1]][to_coords[1]] is None and \
-                            self.board_array["ABCDEFGH"[y + 2]][to_coords[1]] is None:
+                            self.board_array["ABCDEFGH__"[y + 2]][to_coords[1]] is None and \
+                            to_coords[1] == from_coords[1]:
                         return True
-                if y >= 1 and self.player_side == piece_from.color and \
+                if self.player_side == piece_from.color and \
                         piece_from.up == letter and to_coords[0] == "ABCDEFGH"[y - 1] and \
                         to_coords[1] == from_coords[1] and \
                         self.board_array[to_coords[0]][to_coords[1]] is None:
@@ -392,17 +396,169 @@ class Board:
                     print("None", end=" ")
             print()
 
-    def possible_moves(self, side):
+    def possible_moves(self, sidee):
         moves = []
         for y in self.board_array.keys():
             for x, piece in enumerate(self.board_array[y]):
-                if piece is not None and piece.color == side:
+                if piece is not None and piece.color == sidee:
                     for yy in self.board_array.keys():
                         for xx, piece2 in enumerate(self.board_array[y]):
                             if self.is_valid_move((y, x), (yy, xx)):
                                 moves.append(((y, x), (yy, xx)))
-        print(moves)
         return moves
+
+    def has_moves(self, sidee):
+        for y in self.board_array.keys():
+            for x, piece in enumerate(self.board_array[y]):
+                if piece is not None and piece.color == sidee:
+                    for yy in self.board_array.keys():
+                        for xx, piece2 in enumerate(self.board_array[y]):
+                            if self.is_valid_move((y, x), (yy, xx)):
+                                return True
+        return False
+
+    def possible_moves_from(self, piece_coords):
+        moves = []
+        piece = self.board_array[piece_coords[0]][piece_coords[1]]
+        if piece is not None:
+            for yy in self.board_array.keys():
+                for xx, piece2 in enumerate(self.board_array[yy]):
+                    if self.is_valid_move((piece_coords[0], piece_coords[1]), (yy, xx)):
+                        moves.append(((piece_coords[0], piece_coords[1]), (yy, xx)))
+        return moves
+
+    def score(self, side):
+        score = 0
+        for y in self.board_array.keys():
+            for x, piece in enumerate(self.board_array[y]):
+                if piece is not None:
+                    if piece.color == side:
+                        if piece.pClass == "pawn":
+                            score += 1
+                        elif piece.pClass == "tower":
+                            score += 4
+                        elif piece.pClass == "knight":
+                            score += 3
+                        elif piece.pClass == "bishop":
+                            score += 4
+                        elif piece.pClass == "queen":
+                            score += 7
+                        elif piece.pClass == "king":
+                            score += 10
+        if self.check[side]:
+            score -= 10
+        for key in self.check.keys():
+            if key != side and self.check[key]:
+                score += 10
+        return score
+
+
+class Bot:
+    def __init__(self, difficulty, bot_side):
+        self.difficulty = difficulty
+        self.bot_side = bot_side
+
+    def move(self, board, play_side):
+        return self.think_move(self.difficulty, board.copy(), play_side)
+
+    def think_move(self, difficulty, board, play_side):
+        if play_side == "w":
+            possible_moves = board.possible_moves("b")
+        else:
+            possible_moves = board.possible_moves("w")
+        important_moves = possible_moves[:]
+        best_move = None
+        best_score = None
+        if difficulty == -1:
+            for move in tqdm(possible_moves):
+                # print("Possible move: " + str(move))
+                bot_move = move
+                move_score = self.calculate_score(bot_move, board)
+                new_board = board.copy()
+                new_board.move_piece(bot_move[0], bot_move[1])
+                pl_best_move = None
+                pl_best_score = None
+                for pl_move in board.possible_moves(play_side):
+                    # print("Possible player move: " + str(pl_move))
+                    pl_board = new_board.copy()
+                    pl_board.move_piece(pl_move[0], pl_move[1])
+                    pl_move_score = pl_board.score(play_side) - new_board.score(play_side)
+                    if pl_best_move is None or move_score >= pl_best_score:
+                        pl_best_score = pl_move_score
+                        pl_best_move = pl_move
+                bot_score = move_score - pl_best_score
+                if best_score is None or bot_score >= best_score:
+                    best_score = bot_score
+                    best_move = bot_move
+            return best_move
+        else:
+            move_scores = {}
+            move_boards = {}
+            best_pl_moves = {}
+            for move in tqdm(possible_moves):
+                bot_move = move
+                move_score = self.calculate_score(bot_move, board)
+                new_board = board.copy()
+                new_board.move_piece(bot_move[0], bot_move[1])
+                pl_best_move = None
+                pl_best_score = None
+                for pl_move in board.possible_moves(play_side):
+                    pl_board = new_board.copy()
+                    pl_board.move_piece(pl_move[0], pl_move[1])
+                    pl_move_score = pl_board.score(play_side) - new_board.score(play_side)
+                    if pl_best_move is None or move_score >= pl_best_score:
+                        pl_best_score = pl_move_score
+                        pl_best_move = pl_move
+                bot_score = move_score - pl_best_score
+                move_scores[str(move)] = bot_score
+                move_boards[str(move)] = board.copy()
+                move_boards[str(move)].move_piece(move[0], move[1])
+                move_boards[str(move)].move_piece(pl_best_move[0], pl_best_move[1])
+            while difficulty > 1:
+                for move in tqdm(important_moves):
+                    best_next_move = None
+                    best_next_score = None
+                    if play_side == "w":
+                        possible_moves = move_boards[str(move)].possible_moves("b")
+                    else:
+                        possible_moves = move_boards[str(move)].possible_moves("w")
+                    for move2 in possible_moves:
+                        bot_move = move2
+                        move_score = self.calculate_score(bot_move, move_boards[str(move)])
+                        new_board = move_boards[str(move)].copy()
+                        new_board.move_piece(bot_move[0], bot_move[1])
+                        pl_best_move = None
+                        pl_best_score = None
+                        for pl_move in new_board.possible_moves(play_side):
+                            pl_board = new_board.copy()
+                            pl_board.move_piece(pl_move[0], pl_move[1])
+                            pl_move_score = pl_board.score(play_side) - new_board.score(play_side)
+                            if pl_best_move is None or pl_move_score >= pl_best_score:
+                                pl_best_score = pl_move_score
+                                pl_best_move = pl_move
+                        best_pl_moves[str(move)] = pl_best_move
+                        bot_score = move_score - pl_best_score
+                        if best_next_score is None or bot_score >= best_next_score:
+                            best_next_score = bot_score
+                            best_next_move = move2
+                    move_scores[str(move)] += best_next_score
+                    move_boards[str(move)].move_piece(best_next_move[0], best_next_move[1])
+                    move_boards[str(move)].move_piece(best_pl_moves[str(move)][0], best_pl_moves[str(move)][1])
+                difficulty -= 1
+            max_score = None
+            max_move = None
+            for move in important_moves:
+                if max_score is None or move_scores[str(move)] > max_score:
+                    max_score = move_scores[str(move)]
+                    max_move = move
+            return max_move
+
+    def calculate_score(self, move, board):
+        board_copy = board.copy()
+        old_score = board.score(self.bot_side)
+        board_copy.move_piece(move[0], move[1])
+        new_score = board_copy.score(self.bot_side)
+        return new_score - old_score
 
 
 def setup_tiles():
@@ -429,7 +585,7 @@ def setup_board():
     pygame.display.flip()
 
 
-def game_loop():
+def game_loop_2p():
     selected_piece = None
     side = True  # True -> White, False -> Black
 
@@ -445,7 +601,7 @@ def game_loop():
                     if pos[1] // 84 == y:
                         if selected_piece is None:
                             if side:
-                                if len(BOARD.possible_moves("w")) > 0:
+                                if BOARD.has_moves("w"):
                                     if BOARD.board_array[letter][pos[0] // 84] is not None and \
                                             BOARD.board_array[letter][pos[0] // 84].color == "w":
                                         selected_piece = (letter, pos[0] // 84)
@@ -458,7 +614,7 @@ def game_loop():
                                     else:
                                         print("End of the game: Stalemate")
                             else:
-                                if len(BOARD.possible_moves("b")) > 0:
+                                if BOARD.has_moves("b"):
                                     if BOARD.board_array[letter][pos[0] // 84] is not None and \
                                             BOARD.board_array[letter][pos[0] // 84].color == "b":
                                         selected_piece = (letter, pos[0] // 84)
@@ -488,6 +644,84 @@ def game_loop():
         setup_board()
 
 
+def game_loop_1p(difficulty, player_side):
+    if player_side == "w":
+        bot = Bot(difficulty, "b")
+    else:
+        bot = Bot(difficulty, "w")
+    selected_piece = None
+    side = player_side == "w"  # True -> Player, False -> Bot
+
+    if side:
+        print("Your turn...")
+    else:
+        print("Computer is moving...")
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                sys.exit()
+            elif event.type == pygame.MOUSEBUTTONUP:
+                if side:
+                    pos = pygame.mouse.get_pos()
+                    for y, letter in enumerate("ABCDEFGH"):
+                        if pos[1] // 84 == y:
+                            if selected_piece is None:
+                                if BOARD.has_moves(player_side):
+                                    if BOARD.board_array[letter][pos[0] // 84] is not None and \
+                                            BOARD.board_array[letter][pos[0] // 84].color == player_side:
+                                        selected_piece = (letter, pos[0] // 84)
+                                        print("Selected piece: " + letter + " " + str(pos[0] // 84))
+                                    else:
+                                        print("Not a valid piece")
+                                else:
+                                    if BOARD.check["w"]:
+                                        print("End of the game: BLACK wins!")
+                                    else:
+                                        print("End of the game: Stalemate")
+                            else:
+                                if BOARD.is_valid_move(selected_piece, (letter, pos[0] // 84)):
+                                    BOARD.move_piece(selected_piece, (letter, pos[0] // 84))
+                                    selected_piece = None
+                                    side = not side
+                                    print("Computer is moving...")
+                                    # moure peça
+                                else:
+                                    print("Invalid move")
+                                    selected_piece = None
+        if player_side == "w":
+            if not BOARD.has_moves("b"):
+                print("Game ended")
+        else:
+            if not BOARD.has_moves("w"):
+                print("Game ended")
+
+        if not side:
+            setup_board()
+            bot_move = bot.move(BOARD, player_side)
+            BOARD.move_piece(bot_move[0], bot_move[1])
+            side = not side
+            print("Your turn...")
+
+        if not BOARD.has_moves(player_side):
+            print("Game ended")
+
+        setup_board()
+
+
 if __name__ in "__main__":
-    BOARD = Board("BOARD", "w")
-    game_loop()
+    mode = 0
+    sde = "w"
+    for cn, arg in enumerate(sys.argv):
+        if arg == "-1p":
+            mode = 0
+        elif arg == "-2p":
+            mode = 1
+        if arg == "-w":
+            sde = "w"
+        elif arg == "-b":
+            sde = "b"
+    BOARD = Board("BOARD", sde)
+    if mode == 0:
+        game_loop_1p(3, sde)
+    else:
+        game_loop_2p()
