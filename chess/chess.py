@@ -162,6 +162,13 @@ class Board:
                         break
                 if stop:
                     break
+            if self.board_array[new_coords[0]][new_coords[1]].pClass == "pawn":
+                if new_coords[0] == "A" or new_coords[0] == "H":
+                    self.board_array[new_coords[0]][new_coords[1]].pClass = "queen"
+                    image_route = "Images/" + self.board_array[new_coords[0]][new_coords[1]].color + "" + "queen" + ".png"
+                    self.image = pygame.image.load(image_route).convert_alpha()
+                    self.image = pygame.transform.scale(self.image, (64, 64))
+                    self.rectangle = self.image.get_rect()
             self.check['b'] = self.check['w'] = False
             stop = False
             for y in self.board_array.keys():
